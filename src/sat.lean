@@ -22,6 +22,16 @@ mk :: (atom : atom) (negated : bool)
 def l_not : literal → literal
 | {atom := a, negated := n} := {atom := a, negated := !n}
 
+
+lemma l_inv : ∀ l, l_not (l_not l) = l := begin
+  intro l,
+  cases l,
+  rw l_not,
+  rw l_not,
+  simp,
+end
+
+
 abbreviation clause := list literal
 
 abbreviation formula := list clause
@@ -135,14 +145,7 @@ def check_sat : formula → bool
 
     rw assign_lit,
 
-    have inv : l_not (l_not l) = l, by begin
-      cases l,
-      rw l_not,
-      rw l_not,
-      simp,
-    end,
-
-    rw inv,
+    rw l_inv,
 
     let h := assign_keep_size (l_not l) f_end,
     rw formula_len at h,
@@ -192,11 +195,10 @@ end
 using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_lex formula_len⟩]}
 
 
-def example_sat_formula : formula := [[{atom := 3, negated := bool.tt}]]
-def example_unsat_formula : formula := [[{atom := 3, negated := bool.tt}], [{atom := 3, negated := bool.ff}]]
-
-theorem check_sat_correct (f : formula) : (check_sat f = tt) ↔ sat f :=
+theorem check_sat_correct  : ∀ (f : formula), (check_sat f = tt) ↔ sat f :=
 begin
+  intro f,
+  -- TODO: this isn't going to work, we need custom induction!
   induction' f,
   {
     rw check_sat,
@@ -233,7 +235,7 @@ begin
       let second_ret := check_sat (assign_lit (l_not hd) ((hd :: hd_1) :: f)),
       have implies_sat_first : first_ret = tt → sat overall_f := begin
         intro h,
-        sorry,
+
       end,
 
       have implies_sat_second : second_ret = tt → sat overall_f := begin
@@ -282,8 +284,133 @@ begin
   },
 end
 
+def example_sat_formula : formula := [[{atom := 3, negated := bool.tt}]]
+def example_unsat_formula : formula := [[{atom := 3, negated := bool.tt}], [{atom := 3, negated := bool.ff}]]
+
 #eval check_sat example_sat_formula
 #eval check_sat example_unsat_formula
+
+def is_pure_literal (l : literal) (f: formula) : bool := (l_not l) ∉ list.join f
+
+def get_pure_literals  (f : formula) : list literal := 
+list.filter (λ l, is_pure_literal l f) f.join
+
+
+def example_complex_formula : formula := [
+  [{atom := 3, negated := bool.tt}, {atom := 2, negated := bool.ff}],
+  [{atom := 3, negated := bool.tt}, {atom := 2, negated := bool.ff}],
+  [{atom := 1, negated := bool.tt}, {atom := 2, negated := bool.ff}],
+  [{atom := 1, negated := bool.tt}, {atom := 3, negated := bool.ff}]
+]
+
+#eval get_pure_literals example_unsat_formula
+#eval get_pure_literals example_sat_formula
+#eval get_pure_literals example_complex_formula
+
+def assign_pure_literals (f : formula) : formula := 
+list.foldl (λ f l, assign_lit l f) f (get_pure_literals f)
+
+lemma filter_eq (α : Type) (p : α → Prop) [decidable_pred p] (l : list α) : 
+(∀ x, x ∈ l → p x) →
+list.filter p l = l :=
+begin
+  intro h,
+  induction l,
+  {
+    simp,
+  },
+  {
+    simp [h],
+    apply l_ih,
+    intros x h_in,
+    simp [*],
+  },
+end
+
+lemma assign_on_pure_is_subset : ∀ (f : formula) (l : literal), is_pure_literal l f → assign_lit l f ⊆ f :=
+begin
+  intros f l h c h_c,
+  rw is_pure_literal at h,
+  simp at h,
+  induction' f,
+  {
+    rw assign_lit at h_c,
+    simp [h_c],
+  },
+  {
+    cases' classical.em (hd = c);
+      simp [h_1],
+    {
+       apply or.inr,
+       apply ih l,
+       {
+         rw assign_lit at h_c,
+         cases' classical.em (l ∈ hd);
+         simp [h_2] at h_c,
+         {
+          assumption,
+         },
+         {
+          have eq : list.remove_all hd [l_not l] = hd := begin
+            rw list.remove_all,
+            have no_such : ∀ x ∈ hd, x ∉ [l_not l] := begin
+              intros x h_other,
+              simp,
+              let h_k := h hd,
+              simp at h_k,
+              intro h,
+              rw h at h_other,
+              finish [h_k, h_other],
+            end,
+
+            apply filter_eq,
+            finish,
+          end,
+
+          rw eq at h_c,
+          apply or.elim h_c,
+          {
+            intro h_3,
+            rw h_3 at h_1,
+            apply false.elim,
+            apply h_1,
+            refl,
+          },
+          {
+            simp,
+          },
+         },
+       },
+       {
+        intros x h_in,
+        apply h x,
+        simp [h_in],
+       },
+    },
+  },
+end
+
+#eval assign_pure_literals example_unsat_formula
+#eval assign_pure_literals example_sat_formula
+#eval assign_pure_literals example_complex_formula
+
+lemma pure_literals_is_subset : ∀ (f : formula), assign_pure_literals f ⊆ f :=
+begin
+  intros f c h_c,
+  rw assign_pure_literals at h_c,
+  /- apply assign_on_pure_is_subset, -/
+  sorry,
+
+end
+
+lemma containment_2 {α : Type} : ∀ (a b : list α) (c : α), c ∉ b → c ∈ a ++ b → c ∈ a :=
+begin
+  intros a b c h_1 h_2,
+  induction' a;
+  finish,
+end
+
+-- TODO: add here!
              
 /- !any_clause_empty (x :: f) && bool.tt -/
 
