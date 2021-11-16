@@ -55,7 +55,6 @@ begin
         end,
 
         simp at h_1,
-        have in_one : l ∈ pures ∨ l_not l ∈ pures := by finish,
 
         have contained : l ∈ pures := begin
           apply containment_2 pures filtered l;
@@ -68,12 +67,9 @@ begin
         rw is_pure_literal at pure,
 
         have not_contained : l_not l ∉ pures := begin
+          have sub : pures ⊆ f.join := by apply list.filter_subset, 
 
-          have sub : pures ⊆ f.join := begin 
-            apply list.filter_subset,
-          end,
-
-          have not_at_all : l_not l ∉ f.join := begin
+          have not_in_formula : l_not l ∉ f.join := begin
             simp,
             intro x,
             simp at pure,
@@ -83,7 +79,7 @@ begin
           apply outer,
           apply and.intro,
           {
-            exact not_at_all,
+            exact not_in_formula,
           },
           {
             assumption,
@@ -107,7 +103,11 @@ begin
       cases h_2,
       apply and.intro,
       {
-      sorry,
+        have not_in : w_1 ∉ pures := begin
+          
+          
+        end,
+        sorry,
       },
       {
         assumption,

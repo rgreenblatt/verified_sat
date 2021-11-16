@@ -52,8 +52,324 @@ def assign_lit (l : literal) : formula → formula
 | [] := []
 | (x :: f) := (if l ∈ x then [] else [list.remove_all x [l_not l]]) ++ assign_lit f
 
-def formula_len (f : formula) : lex ℕ ℕ := (list.length f, list.length (list.join f))
+lemma assign_removes : ∀ (f : formula) (l : literal), l ∉ (assign_lit l f).join ∧ l_not l ∉ (assign_lit l f).join:=
+begin
+  intros f l,
+  induction' f;
+  rw assign_lit;
+  simp,
+  {
+    apply and.intro,
+    
+    {
+      intro h,
+      cases' h;
+      cases' h;
+      cases' h,
+      {
+        cases' classical.em (l ∈ hd);
+        simp [h] at left,
+        {
+          assumption,
+        },
+        {
+          rw left at right,
+          rw list.remove_all at right,
+          simp [h] at right,
+          assumption,
+        },
+      },
+      {
+        have not_in := ih l,
+        simp at not_in,
 
+        have not_in := (and.elim_left not_in) w left,
+        exact not_in right,
+      },
+    },
+    {
+      intro h,
+      cases' h;
+      cases' h;
+      cases' h,
+      {
+        cases' classical.em (l ∈ hd);
+        simp [h] at left,
+        {
+          assumption,
+        },
+        {
+          rw left at right,
+          rw list.remove_all at right,
+          simp [h] at right,
+          assumption,
+        },
+        
+      },
+      {
+        have not_in := ih l,
+        simp at not_in,
+
+        have not_in := (and.elim_right not_in) w left,
+        exact not_in right,
+      },
+    },
+  },
+
+end
+
+lemma assign_subset : ∀ (f : formula) (l : literal), (assign_lit l f).join ⊆ f.join := 
+begin
+  intros f l_assign l h,
+  induction f;
+  rw assign_lit at h;
+  simp [h],
+  {
+    apply h,
+  },
+  {
+    simp at h,
+    cases' h,
+    {
+      cases' h,
+      cases' h,
+      cases' classical.em (l_assign ∈ f_hd);
+      simp [h] at left,
+      {
+        apply classical.by_contradiction,
+        intros,
+        assumption,
+      },
+      {
+        rw left at right,
+        have sub : list.remove_all f_hd [l_not l_assign] ⊆ f_hd := by apply list.filter_subset,
+        apply or.intro_left,
+        apply sub,
+        assumption,
+      },
+    },
+    {
+      cases' h,
+      cases' h,
+      apply or.intro_right,
+      simp at f_ih,
+      apply f_ih w left right,
+    },
+  },
+end
+
+def num_distinct {α : Type} [decidable_eq α] (a : list α) := a.erase_dup.length
+
+def num_literals (f : formula) : ℕ := num_distinct f.join
+
+lemma removal_reduces_distinct :
+∀ (a : list /-α-/ literal) (l : literal), 
+l ∈ a → num_distinct a = num_distinct (list.remove_all a [l]) + 1 :=
+begin
+  intros a l h,
+  induction' a,
+  {
+    apply classical.by_contradiction,
+    intros,
+    apply h,
+  },
+  {
+    cases' classical.em (hd ∈ a),
+    {
+      rw num_distinct,
+      rw num_distinct,
+      have eq : (hd :: a).erase_dup = a.erase_dup := by exact list.erase_dup_cons_of_mem h_1,
+      rw eq,
+      have eq : ((hd :: a).remove_all [l]).erase_dup = (a.remove_all [l]).erase_dup := begin
+        rw list.remove_all,
+        rw list.remove_all,
+        rw list.filter,
+        simp,
+        cases' classical.em (hd = l);
+        simp [h_2],
+        apply list.erase_dup_cons_of_mem,
+        apply list.mem_filter_of_mem;
+        assumption
+      end,
+      rw eq,
+      apply ih,
+      exact list.mem_of_mem_cons_of_mem h h_1,
+    },
+    {
+      rw num_distinct,
+      rw num_distinct,
+      have eq : (hd :: a).erase_dup = hd :: a.erase_dup := list.erase_dup_cons_of_not_mem h_1,
+      rw eq,
+      rw list.length,
+      cases' classical.em (hd = l),
+      {
+        rw h_2,
+        rw h_2 at h_1,
+        have eq : (l :: a).remove_all [l] = a := begin
+          rw list.remove_all,
+          rw list.filter,
+          simp,
+          rw list.filter_eq_self,
+          intros l_1 h,
+          intro eq,
+          rw eq at h,
+          exact  h_1 h,
+        end,
+        
+        rw eq,
+      },
+      {
+        have eq : ((hd :: a).remove_all [l]) = hd :: (a.remove_all [l]) := begin
+          rw list.remove_all,
+          rw list.remove_all,
+          rw list.filter,
+          simp [h_2],
+        end,
+        rw eq,
+        have eq : (hd :: a.remove_all [l]).erase_dup = hd :: (a.remove_all [l]).erase_dup := begin
+          apply list.erase_dup_cons_of_not_mem,
+          have sub : a.remove_all [l] ⊆ a := by apply list.filter_subset,
+          have impl : hd ∈ a.remove_all [l] → hd ∈ a := begin
+            intro h,
+            apply sub,
+            assumption,
+          end,
+          exact mt impl h_1,
+        end,
+        rw eq,
+        rw list.length,
+        simp,
+        apply ih,
+        exact list.mem_of_ne_of_mem (ne.symm h_2) h,
+      },
+    },
+  },
+
+end
+
+lemma num_distinct_reduced /-{α : Type} [decidable_eq α]-/ : 
+∀ (a b : list /-α-/ literal), 
+a ⊆ b → 
+(∃ x ∈ b, x ∉ a) → 
+num_distinct a < num_distinct b := 
+begin
+  intros a b h_sub,
+  intro elim_exists,
+  cases' elim_exists,
+  rw num_distinct,
+  rw num_distinct,
+  cases' h,
+  induction' a,
+  {
+    simp,
+
+    have non_empty : w ∈ b.erase_dup := begin
+      rw list.mem_erase_dup,
+      apply w_1,
+    end,
+
+    exact list.length_pos_of_mem non_empty,
+  },
+  {
+    
+    cases' classical.em (hd ∈ a),
+    {
+      have eq : (hd :: a).erase_dup = a.erase_dup := begin
+        rw list.erase_dup_cons_of_mem',
+        rw list.mem_erase_dup,
+        assumption,
+      end,
+      rw eq,
+      apply ih b w,
+      {
+        assumption,
+      },
+      {
+        exact list.subset_of_cons_subset h_sub,
+      },
+      {
+        exact list.not_mem_of_not_mem_cons h,
+      },
+    },
+    {
+      let rec_b := list.remove_all b [hd],
+      have eq_b : b.erase_dup.length = rec_b.erase_dup.length + 1 := begin
+        apply removal_reduces_distinct,
+        apply h_sub,
+        exact list.mem_cons_self hd a,
+      end,
+      rw eq_b,
+      have eq_a : (hd :: a).erase_dup = hd :: a.erase_dup := begin
+        apply list.erase_dup_cons_of_not_mem',
+        rw list.mem_erase_dup,
+        assumption,
+      end,
+      rw eq_a,
+      simp,
+      let ih := ih rec_b w,
+      have eq_rec_b : rec_b = b.remove_all [hd] := by refl,
+      apply ih,
+      {
+        rw eq_rec_b,
+        rw list.remove_all,
+        simp,
+        apply and.intro,
+        {
+          assumption,
+        },
+        {
+          exact list.ne_of_not_mem_cons h,
+        },
+      },
+      {
+        intros l h_in,
+
+        rw eq_rec_b,
+        rw list.remove_all,
+        apply list.mem_filter_of_mem,
+        {
+          apply h_sub,
+          simp [h_in],
+        },
+       {
+        simp,
+        intro h,
+        rw h at h_in,
+        exact h_1 h_in,
+       },
+      },
+      {
+        exact list.not_mem_of_not_mem_cons h,
+      },
+    },
+  },
+end
+
+lemma assign_with_present_reduces_literals : 
+∀ (f : formula) (l : literal), 
+l ∈ f.join → num_literals (assign_lit l f) < num_literals f :=
+begin 
+  intros f l h,
+  rw num_literals,
+  rw num_literals,
+  apply num_distinct_reduced,
+  apply assign_subset,
+  apply exists.intro l,
+  
+  simp,
+  apply and.intro,
+  {
+    simp at h,
+    assumption,
+  },
+  {
+    have removed := and.elim_left (assign_removes f l),
+    simp at removed,
+    exact removed,
+  },
+end
+
+/-
 lemma filter_reduces_length (α : Type) (p : α → Prop) [decidable_pred p] (l: list α)
 : (list.filter p l).length ≤ l.length := begin
   induction' l,
@@ -70,6 +386,7 @@ lemma filter_reduces_length (α : Type) (p : α → Prop) [decidable_pred p] (l:
     },
   },
 end
+-/
 
 def as_non_lex (x : lex ℕ ℕ) : ℕ × ℕ := x
 
