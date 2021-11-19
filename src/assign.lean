@@ -15,62 +15,51 @@ begin
   induction' f;
   rw assign_lit;
   simp,
+  apply and.intro;
+  intro h;
+  cases' h;
+  cases' h;
+  cases' h,
   {
-    apply and.intro,
+    cases' classical.em (l ∈ hd);
+    simp [h] at left,
+    {
+      assumption,
+    },
+    {
+      rw left at right,
+      rw list.remove_all at right,
+      simp [h] at right,
+      assumption,
+    },
+  },
+  {
+    have not_in := ih l,
+    simp at not_in,
+
+    have not_in := (and.elim_left not_in) w left,
+    exact not_in right,
+  },
+  {
+    cases' classical.em (l ∈ hd);
+    simp [h] at left,
+    {
+      assumption,
+    },
+    {
+      rw left at right,
+      rw list.remove_all at right,
+      simp [h] at right,
+      assumption,
+    },
     
-    {
-      intro h,
-      cases' h;
-      cases' h;
-      cases' h,
-      {
-        cases' classical.em (l ∈ hd);
-        simp [h] at left,
-        {
-          assumption,
-        },
-        {
-          rw left at right,
-          rw list.remove_all at right,
-          simp [h] at right,
-          assumption,
-        },
-      },
-      {
-        have not_in := ih l,
-        simp at not_in,
+  },
+  {
+    have not_in := ih l,
+    simp at not_in,
 
-        have not_in := (and.elim_left not_in) w left,
-        exact not_in right,
-      },
-    },
-    {
-      intro h,
-      cases' h;
-      cases' h;
-      cases' h,
-      {
-        cases' classical.em (l ∈ hd);
-        simp [h] at left,
-        {
-          assumption,
-        },
-        {
-          rw left at right,
-          rw list.remove_all at right,
-          simp [h] at right,
-          assumption,
-        },
-        
-      },
-      {
-        have not_in := ih l,
-        simp at not_in,
-
-        have not_in := (and.elim_right not_in) w left,
-        exact not_in right,
-      },
-    },
+    have not_in := (and.elim_right not_in) w left,
+    exact not_in right,
   },
 end
 
@@ -252,28 +241,26 @@ begin
   intro h,
   induction' f;
   rw assign_lit,
+  simp at h,
+  cases' h,
+  rw not_or_distrib at left,
+  rw not_or_distrib at right,
+  cases' left,
+  cases' right,
+  simp [left],
+  apply and.intro,
   {
-    simp at h,
-    cases' h,
-    rw not_or_distrib at left,
-    rw not_or_distrib at right,
-    cases' left,
-    cases' right,
-    simp [left],
-    apply and.intro,
-    {
-      rw list.remove_all,
-      rw list.filter_eq_self,
-      simp,
-      intros a h_in,
-      intro eq,
-      rw eq at h_in,
-      contradiction,
-    },
-    {
-      apply ih,
-      simp [right, right_1],
-    },
+    rw list.remove_all,
+    rw list.filter_eq_self,
+    simp,
+    intros a h_in,
+    intro eq,
+    rw eq at h_in,
+    contradiction,
+  },
+  {
+    apply ih,
+    simp [right, right_1],
   },
 end
 
