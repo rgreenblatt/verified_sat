@@ -151,14 +151,14 @@ def naive_choice_func : choice_func := subtype.mk
 end)
 
 
-def example_sat_formula : formula := [[{atom := 3, negated := bool.tt}]]
+def example_sat_formula : formula := [[{atom := 3, negated := tt}]]
 def example_unsat_formula : formula := 
-  [[{atom := 3, negated := bool.tt}], [{atom := 3, negated := bool.ff}]]
+  [[{atom := 3, negated := tt}], [{atom := 3, negated := ff}]]
 def example_complex_formula : formula := [
-  [{atom := 3, negated := bool.tt}, {atom := 2, negated := bool.ff}],
-  [{atom := 3, negated := bool.tt}, {atom := 2, negated := bool.ff}],
-  [{atom := 1, negated := bool.tt}, {atom := 2, negated := bool.ff}],
-  [{atom := 1, negated := bool.tt}, {atom := 3, negated := bool.ff}]
+  [{atom := 3, negated := tt}, {atom := 2, negated := ff}],
+  [{atom := 3, negated := tt}, {atom := 2, negated := ff}],
+  [{atom := 1, negated := tt}, {atom := 2, negated := ff}],
+  [{atom := 1, negated := tt}, {atom := 3, negated := ff}]
 ]
 
 def is_pure_literal (l : literal) (f: formula) : bool := 
