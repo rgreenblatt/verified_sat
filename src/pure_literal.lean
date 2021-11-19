@@ -1,23 +1,30 @@
 import assign
-import general_simplify
+import general_assign
 
 def get_pure_literals  (f : formula) : list literal := 
-list.filter (λ l, is_pure_literal l f) f.join
+  list.filter (λ l, is_pure_literal l f) f.join
 
 #eval get_pure_literals example_unsat_formula
 #eval get_pure_literals example_sat_formula
 #eval get_pure_literals example_complex_formula
 
-def assign_pure_literals (f : formula) : formula := assign_all f (get_pure_literals f)
+def assign_pure_literals (f : formula) : formula := 
+  assign_all f (get_pure_literals f)
+
+#eval assign_pure_literals example_unsat_formula
+#eval assign_pure_literals example_sat_formula
+#eval assign_pure_literals example_complex_formula
 
 lemma pure_literal_impl_correct (f : formula) (pures : list literal) 
-: ↥(pures.all (λ l, is_pure_literal l f)) → (sat f  ↔  sat (assign_all f pures)) :=
+: ↥(pures.all (λ l, is_pure_literal l f)) → 
+  (sat f  ↔  sat (assign_all f pures)) :=
 begin
   intro h,
   rw assign_all,
   induction' pures;
   simp,
-  have h_f : ↥(pures.all (λ l, is_pure_literal l (assign_lit hd f))) := begin
+  have h_f : ↥(pures.all (λ l, is_pure_literal l (assign_lit hd f))) := 
+  begin
     rw list.all_iff_forall,
     rw list.all_iff_forall at h,
     intros a h_in,
@@ -40,7 +47,7 @@ begin
   have ih := ih (assign_lit hd f) h_f,
   rw ←ih,
 
-  apply general_simplify,
+  apply general_assign,
   apply or.inr,
   rw list.all_iff_forall at h,
   apply h,
@@ -59,8 +66,3 @@ end
 lemma pure_literals_leq_num_literals (f : formula) 
 : num_literals (assign_pure_literals f) ≤ num_literals f := 
 by apply assign_all_leq_num_literals
-
-
-#eval assign_pure_literals example_unsat_formula
-#eval assign_pure_literals example_sat_formula
-#eval assign_pure_literals example_complex_formula

@@ -30,6 +30,7 @@ def compute_sat (g : choice_func) : formula → bool
       < num_literals f := reduces _ _ in_joined,
   have second : num_literals (simplify (assign_lit (l_not l) f)) 
       < num_literals f := reduces _ _ in_joined_flip,
+
   compute_sat (simplify (assign_lit l f)) || 
     compute_sat (simplify (assign_lit (l_not l) f))
 using_well_founded {rel_tac := λ _ _, 
@@ -58,12 +59,15 @@ begin
     {
       have is_false : compute_sat g (hd :: f) = ff := begin
         rw compute_sat,
-        rw dite,
 
+        -- won't seem to simplify!
         simp [h],
         simp at h,
         simp [h],
         cases' h,
+
+        rw dite,
+        simp [h],
 
         sorry,
       end,
@@ -201,7 +205,7 @@ begin
           simp at ih,
           rw simplify_correct at ih,
           rw ih,
-          apply general_simplify_sub _ _ _ h_1,
+          apply general_assign_sub _ _ _ h_1,
           apply or.inr (or.inr h_2),
         },
       },

@@ -3,7 +3,8 @@ import tactic.induction
 import tactic.linarith
 import tactic.rcases
 
-def num_distinct {α : Type} [decidable_eq α] (a : list α) := a.erase_dup.length
+def num_distinct {α : Type} [decidable_eq α] (a : list α) := 
+  a.erase_dup.length
 
 lemma num_distinct_reduced {α : Type} [decidable_eq α] :
 ∀ (a b : list α), 
@@ -49,7 +50,8 @@ begin
 
     have eq : b.erase_dup.length = b_rec.length + 1 := begin
       simp only [b_rec],
-      have equiv : (b.erase_dup.erase hd).length = b.erase_dup.length.pred := begin
+      have equiv : (b.erase_dup.erase hd).length = b.erase_dup.length.pred := 
+      begin
         apply list.length_erase_of_mem,
         apply sub,
         simp [h_in],
@@ -57,7 +59,8 @@ begin
 
       rw equiv,
 
-      have eq : b.erase_dup.length.pred + 1 = b.erase_dup.length := nat.succ_pred_eq_of_pos non_empty,
+      have eq : b.erase_dup.length.pred + 1 = b.erase_dup.length := 
+        nat.succ_pred_eq_of_pos non_empty,
 
       rw eq,
     end,

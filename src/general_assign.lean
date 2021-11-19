@@ -1,7 +1,17 @@
 import assign
 
-lemma general_simplify_sub (f : formula) (l : literal) (w : assignment) (h : formula_sat w f) 
-(elim : [l] ∈ f ∨ is_pure_literal l f ∨ ¬(l ∈ w ∨ l_not l ∈ w)) 
+/- 
+to generalize over a few different cases we have a lemma which takes the
+'which_case' field
+
+(honestly, this is pretty hacky, but it avoids copying around a bunch of terms
+or having to define an overly general lemma)
+-/
+
+lemma general_assign_sub (f : formula) (l : literal) (w : assignment) 
+(h : formula_sat w f) 
+(which_case : [l] ∈ f ∨ is_pure_literal l f ∨ 
+    ¬(l ∈ w ∨ l_not l ∈ w)) 
   : sat (assign_lit l f) :=
 begin
   apply sat_implies_assign_sat_or_cant_exist,
@@ -19,8 +29,7 @@ begin
     simp [right],
     have is_in : w_1 ∈ w.val.remove_all [l_not l] ++ [l] := begin
       simp,
-      -- TODO: this is a bit hacky tbh
-      cases' elim,
+      cases' which_case,
       {
         rename h_1 is_unit,
         have is_sat := h [l] is_unit,
@@ -88,16 +97,16 @@ begin
   },
 end
 
-lemma general_simplify (f : formula) (l : literal) 
-  (elim : [l] ∈ f ∨ is_pure_literal l f) 
+lemma general_assign (f : formula) (l : literal) 
+  (which_case : [l] ∈ f ∨ is_pure_literal l f) 
   : sat f ↔ sat (assign_lit l f) :=
 begin
   apply iff.intro,
   {
     intro is_sat,
     cases' is_sat,
-    apply general_simplify_sub _ _ _ h,
-    cases' elim;
+    apply general_assign_sub _ _ _ h,
+    cases' which_case;
     simp [h_1],
   },
   {

@@ -6,10 +6,17 @@ def simplify : formula → formula
 | f := 
 let new_f := assign_unit_clauses (assign_pure_literals f) in 
 if h : num_literals new_f < num_literals f then simplify new_f else new_f
-using_well_founded {rel_tac := λ _ _, `[exact ⟨_, measure_wf num_literals⟩]}
+using_well_founded {rel_tac := λ _ _, 
+                    `[exact ⟨_, measure_wf num_literals⟩]}
+
+
+#eval simplify example_unsat_formula
+#eval simplify example_sat_formula
+#eval simplify example_complex_formula
 
 lemma overall_leq (f : formula) : 
-num_literals (assign_unit_clauses (assign_pure_literals f)) ≤ num_literals f := 
+num_literals (assign_unit_clauses (assign_pure_literals f)) ≤ 
+  num_literals f := 
 begin
   have leq_unit : num_literals (assign_unit_clauses (assign_pure_literals f)) ≤ num_literals (assign_pure_literals f) := 
   by apply unit_clauses_leq_num_literals,
@@ -23,8 +30,10 @@ end
 lemma simplify_leq_num_literals  : 
 ∀ (f : formula), num_literals (simplify f) ≤ num_literals f := begin
   intro f,
-  induction h_eq : (num_literals f) using nat.strong_induction_on with n ih generalizing f,
-  let is_less := num_literals (assign_unit_clauses (assign_pure_literals f)) < num_literals f,
+  induction h_eq : (num_literals f) using nat.strong_induction_on 
+    with n ih generalizing f,
+  let is_less := num_literals (assign_unit_clauses (assign_pure_literals f)) < 
+    num_literals f,
   cases' classical.em is_less;
   rw simplify;
   simp only [is_less] at h;
@@ -42,8 +51,10 @@ lemma simplify_leq_num_literals  :
 end
 
 theorem simplify_correct (f : formula) : sat (simplify f) ↔ sat f := begin
-  induction h_eq : (num_literals f) using nat.strong_induction_on with n ih generalizing f,
-  let is_less := num_literals (assign_unit_clauses (assign_pure_literals f)) < num_literals f,
+  induction h_eq : (num_literals f) using nat.strong_induction_on 
+    with n ih generalizing f,
+  let is_less := num_literals (assign_unit_clauses (assign_pure_literals f)) < 
+    num_literals f,
   cases' classical.em is_less;
   rw simplify;
   simp only [is_less] at h;

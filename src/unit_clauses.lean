@@ -1,5 +1,5 @@
 import assign
-import general_simplify
+import general_assign
 
 def get_unit_clause_op : clause → option literal
 | [l] := option.some l
@@ -11,9 +11,16 @@ by rw get_unit_clause_op
 
 def get_unit_clauses := list.filter_map get_unit_clause_op 
 
+#eval get_unit_clauses example_unsat_formula
+#eval get_unit_clauses example_sat_formula
+#eval get_unit_clauses example_complex_formula
+
 def assign_unit_clauses (f : formula) : formula :=
 assign_all f (get_unit_clauses f)
 
+#eval assign_unit_clauses example_unsat_formula
+#eval assign_unit_clauses example_sat_formula
+#eval assign_unit_clauses example_complex_formula
 
 lemma unit_clause_not_removed (f : formula) (l a : literal)
 : [a] ∈ f → l.atom ≠ a.atom → [a] ∈ assign_lit l f := begin
@@ -59,10 +66,12 @@ lemma unit_clause_not_removed (f : formula) (l a : literal)
   },
 end
 
-def unit_or_missing (f : formula) (l : literal) : bool := [l] ∈ f ∨ (l ∉ f.join ∧ l_not l ∉ f.join)
+def unit_or_missing (f : formula) (l : literal) : bool := 
+  [l] ∈ f ∨ (l ∉ f.join ∧ l_not l ∉ f.join)
 
 lemma unit_clause_impl_correct (f : formula) (units : list literal) 
-: ↥(units.all (unit_or_missing f)) → (sat f  ↔  sat (assign_all f units)) :=
+: ↥(units.all (unit_or_missing f)) → 
+(sat f ↔ sat (assign_all f units)) :=
 begin
   intro h,
   rw assign_all,
@@ -141,7 +150,7 @@ begin
   simp at h,
   cases' h,
   {
-    apply general_simplify,
+    apply general_assign,
     apply or.inl h_1,
   },
   {
