@@ -2,35 +2,11 @@ import types
 
 def assign_lit (l : literal) : formula → formula
 | [] := []
-| (x :: f) := (if l ∈ x then [] else [list.remove_all x [l_not l]]) ++ assign_lit f
+| (x :: f) := 
+  (if l ∈ x then [] else [list.remove_all x [l_not l]]) ++ assign_lit f
 
-lemma not_in {α : Type} (a b : list  α) (c : α) : c ∉ a ++ b ↔ c ∉ a ∧ c ∉ b :=
-begin
-  apply iff.intro,
-  {
-    intro h,
-      
-    induction' a,
-    {
-      simp at h,
-      simp [h],
-    },
-    {
-      simp [h],
-      rw not_or_distrib,
-      have n_in :=  list.ne_and_not_mem_of_not_mem_cons h,
-      cases' n_in,
-      simp [left],
-      apply ih,
-      exact right,
-    },
-  },
-  {
-    intro h,
-    cases' h,
-    exact list.not_mem_append left right,
-  },
-end
+def assign_all (f : formula) (lits : list literal) :=
+list.foldl (λ f l, assign_lit l f) f lits
 
 lemma assign_removes : ∀ (f : formula) (l : literal), l ∉ (assign_lit l f).join ∧ l_not l ∉ (assign_lit l f).join:=
 begin
@@ -169,6 +145,34 @@ begin
   },
 end
 
+lemma list_not_in_append {α : Type} (a b : list  α) (c : α) : c ∉ a ++ b ↔ c ∉ a ∧ c ∉ b :=
+begin
+  apply iff.intro,
+  {
+    intro h,
+      
+    induction' a,
+    {
+      simp at h,
+      simp [h],
+    },
+    {
+      simp [h],
+      rw not_or_distrib,
+      have n_in :=  list.ne_and_not_mem_of_not_mem_cons h,
+      cases' n_in,
+      simp [left],
+      apply ih,
+      exact right,
+    },
+  },
+  {
+    intro h,
+    cases' h,
+    exact list.not_mem_append left right,
+  },
+end
+
 lemma assign_when_not_in_out : ∀ (f : formula) (l : literal) (c : clause), c ∈ f → c ∉ assign_lit l f → l_not l ∈ c ∨ l ∈ c := 
 begin 
   intros f l c c_f c_n_a_f,
@@ -187,7 +191,7 @@ begin
         assumption,
       },
       {
-        rw not_in at c_n_a_f,
+        rw list_not_in_append at c_n_a_f,
         cases' c_n_a_f,
         assumption,
       },
@@ -607,4 +611,15 @@ lemma sat_implies_assign_sat_or_cant_exist (f : formula) (l : literal) :
       apply w.property _ right left_2,
     },
   },
+end
+
+lemma assign_all_leq_num_literals (f : formula) (lits : list literal)
+: num_literals (assign_all f lits) ≤ num_literals f := 
+begin
+  rw assign_all,
+  induction' lits;
+  simp,
+  have ih := ih (assign_lit hd f),
+  have less : num_literals (assign_lit hd f) ≤ num_literals f := by apply assign_leq_literals,
+  linarith,
 end
