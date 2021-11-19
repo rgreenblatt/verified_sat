@@ -59,16 +59,8 @@ begin
     {
       have is_false : compute_sat g (hd :: f) = ff := begin
         rw compute_sat,
-
-        simp [h],
-        simp at h,
-        simp [h],
-        cases' h,
-
-        rw dite,
-        simp [h],
-
-        sorry,
+        rw dif_pos,
+        exact h,
       end,
 
       simp at h,
@@ -210,14 +202,4 @@ begin
       },
     },
   },
-end
-
-set_option trace.simp_lemmas true
-
-lemma compute_sat_ff (f : formula) (hd : clause) (g : choice_func) (h : (hd :: f).join = list.nil) :
-compute_sat g (hd :: f) = ff := begin
-  rw compute_sat,
-  simp at h,
-  cases h,
-  simp [h_right], -- fails with 'invalid simplification lemma :(
 end
