@@ -40,7 +40,7 @@ using_well_founded {rel_tac := λ _ _,
 #eval compute_sat naive_choice_func example_unsat_formula
 #eval compute_sat naive_choice_func example_complex_formula
 
-theorem check_sat_correct (f : formula) (g : choice_func) : 
+theorem compute_sat_correct (f : formula) (g : choice_func) : 
   (compute_sat g f = tt) ↔ sat f :=
 begin
   induction h_eq : (num_literals f) using nat.strong_induction_on 
@@ -60,7 +60,6 @@ begin
       have is_false : compute_sat g (hd :: f) = ff := begin
         rw compute_sat,
 
-        -- won't seem to simplify!
         simp [h],
         simp at h,
         simp [h],
@@ -211,4 +210,14 @@ begin
       },
     },
   },
+end
+
+set_option trace.simp_lemmas true
+
+lemma compute_sat_ff (f : formula) (hd : clause) (g : choice_func) (h : (hd :: f).join = list.nil) :
+compute_sat g (hd :: f) = ff := begin
+  rw compute_sat,
+  simp at h,
+  cases h,
+  simp [h_right], -- fails with 'invalid simplification lemma :(
 end
