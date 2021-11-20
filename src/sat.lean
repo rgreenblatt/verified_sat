@@ -14,7 +14,11 @@ end
 def compute_sat (g : choice_func) : formula → bool
 | [] := tt
 | f := 
-  if h : f.join = [] then ff else 
+
+  -- this line is here just to make proving things easier
+  if h : f.join = [] then ff else
+
+  if [] ∈ f then ff else
   let non_empty_f := (subtype.mk f h) in
   let l := g.val non_empty_f in
   have in_joined : l ∈ f.join ∨ l_not l ∈ f.join := 
@@ -55,7 +59,17 @@ begin
     simp,
   },
   {
-    cases' classical.em ((hd :: f).join = list.nil),
+    have nil_in_implies_unsat : [] ∈ hd :: f →  ¬ sat (hd :: f) := begin
+      intro nil_in,
+      intro is_sat,
+      cases' is_sat,
+      have is_sat := h [] nil_in,
+      rw clause_sat at is_sat,
+      simp at is_sat,
+      contradiction,
+    end,
+
+    cases' classical.em ((hd :: f).join = []),
     {
       have is_false : compute_sat g (hd :: f) = ff := begin
         rw compute_sat,
@@ -63,25 +77,24 @@ begin
         exact h,
       end,
 
-      simp at h,
-      cases' h,
-
       rw is_false,
       simp,
-      intro is_sat,
-      cases' is_sat,
-      rw formula_sat at h,
-      have h := h hd,
+
+      apply nil_in_implies_unsat,
       simp at h,
-      rw clause_sat at h,
       cases' h,
-      cases' h_1,
-      rw left at right_1,
-      exact list.not_mem_nil w_1 right_1
+      rw left,
+      simp,
+    },
+    cases' classical.em ([] ∈ (hd :: f)) with nil_in nil_n_in,
+    {
+      rw compute_sat,
+      simp [h, nil_in],
+      exact nil_in_implies_unsat nil_in,
     },
     {
       rw compute_sat,
-      simp [h],
+      simp [h, nil_n_in],
 
       let non_empty_f : non_empty_formula := ⟨hd :: f, h⟩,
       let l := (g.val non_empty_f),
