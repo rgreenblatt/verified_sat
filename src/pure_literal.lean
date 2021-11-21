@@ -63,6 +63,6 @@ sat f  ↔  sat (assign_pure_literals f) := begin
   apply list.of_mem_filter,
 end
 
-lemma pure_literals_leq_num_literals (f : formula) 
-: num_literals (assign_pure_literals f) ≤ num_literals f := 
-by apply assign_all_leq_num_literals
+lemma pure_literals_leq_size (f : formula) 
+: formula_size (assign_pure_literals f) ≤ formula_size f := 
+by apply assign_all_leq_size

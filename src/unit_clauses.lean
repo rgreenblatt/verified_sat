@@ -197,6 +197,6 @@ sat f ↔ sat (assign_unit_clauses f) := begin
   },
 end
 
-lemma unit_clauses_leq_num_literals (f : formula) 
-: num_literals (assign_unit_clauses f) ≤ num_literals f := 
-by apply assign_all_leq_num_literals
+lemma unit_clauses_leq_size (f : formula) 
+: formula_size (assign_unit_clauses f) ≤ formula_size f := 
+by apply assign_all_leq_size

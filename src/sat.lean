@@ -3,11 +3,11 @@ import simplify
 
 lemma reduces (f : formula) (l : literal) 
   (h : l ∈ f.join ∨ l_not l ∈ f.join) : 
-  num_literals (simplify (assign_lit l f)) < num_literals f := 
+  formula_size (simplify (assign_lit l f)) < formula_size f := 
 begin
-  have first_assign : num_literals (assign_lit l f) < num_literals f := 
-    assign_with_present_reduces_literals _ _ h,
-  have leq := simplify_leq_num_literals (assign_lit l f),
+  have first_assign : formula_size (assign_lit l f) < formula_size f := 
+    assign_with_present_reduces_size _ _ h,
+  have leq := simplify_leq_size (assign_lit l f),
   linarith,
 end
 
@@ -30,15 +30,15 @@ def compute_sat (g : choice_func) : formula → bool
     exact in_joined,
   end,
 
-  have first : num_literals (simplify (assign_lit l f)) 
-      < num_literals f := reduces _ _ in_joined,
-  have second : num_literals (simplify (assign_lit (l_not l) f)) 
-      < num_literals f := reduces _ _ in_joined_flip,
+  have first : formula_size (simplify (assign_lit l f)) 
+      < formula_size f := reduces _ _ in_joined,
+  have second : formula_size (simplify (assign_lit (l_not l) f)) 
+      < formula_size f := reduces _ _ in_joined_flip,
 
   compute_sat (simplify (assign_lit l f)) || 
     compute_sat (simplify (assign_lit (l_not l) f))
 using_well_founded {rel_tac := λ _ _, 
-                    `[exact ⟨_, measure_wf num_literals⟩]}
+                    `[exact ⟨_, measure_wf formula_size⟩]}
 
 #eval compute_sat naive_choice_func example_sat_formula
 #eval compute_sat naive_choice_func example_unsat_formula
@@ -47,7 +47,7 @@ using_well_founded {rel_tac := λ _ _,
 theorem compute_sat_correct (f : formula) (g : choice_func) : 
   (compute_sat g f = tt) ↔ sat f :=
 begin
-  induction h_eq : (num_literals f) using nat.strong_induction_on 
+  induction h_eq : (formula_size f) using nat.strong_induction_on 
     with n ih generalizing f,
   cases' f,
   {
@@ -110,11 +110,11 @@ begin
         exact in_joined,
       end,
 
-      have first : num_literals (simplify (assign_lit l (hd :: f))) < 
-          num_literals (hd :: f) := 
+      have first : formula_size (simplify (assign_lit l (hd :: f))) < 
+          formula_size (hd :: f) := 
         reduces _ _ in_joined,
-      have second : num_literals (simplify (assign_lit (l_not l) (hd :: f))) < 
-          num_literals (hd :: f) := 
+      have second : formula_size (simplify (assign_lit (l_not l) (hd :: f))) < 
+          formula_size (hd :: f) := 
         reduces _ _ in_joined_flip,
 
       apply iff.intro,
@@ -123,7 +123,7 @@ begin
         cases' h_or,
         {
           let sub_f := simplify (assign_lit l (hd :: f)),
-          let m := num_literals (simplify (assign_lit l (hd :: f))),
+          let m := formula_size (simplify (assign_lit l (hd :: f))),
           have ih := ih m (begin
             rw ←h_eq,
             simp only [m],
@@ -138,7 +138,7 @@ begin
         -- TODO: dedup?
         {
           let sub_f := simplify (assign_lit (l_not l) (hd :: f)),
-          let m := num_literals (simplify (assign_lit (l_not l) (hd :: f))),
+          let m := formula_size (simplify (assign_lit (l_not l) (hd :: f))),
           have ih := ih m (begin
             rw ←h_eq,
             simp only [m],
@@ -160,7 +160,7 @@ begin
           {
             apply or.inl,
             let sub_f := simplify (assign_lit l (hd :: f)),
-            let m := num_literals (simplify (assign_lit l (hd :: f))),
+            let m := formula_size (simplify (assign_lit l (hd :: f))),
             have ih := ih m (begin
               rw ←h_eq,
               simp only [m],
@@ -179,7 +179,7 @@ begin
           {
             apply or.inr,
             let sub_f := simplify (assign_lit (l_not l) (hd :: f)),
-            let m := num_literals (simplify (assign_lit (l_not l) (hd :: f))),
+            let m := formula_size (simplify (assign_lit (l_not l) (hd :: f))),
             have ih := ih m (begin
               rw ←h_eq,
               simp only [m],
@@ -199,7 +199,7 @@ begin
           -- TODO: dedup?
           apply or.inl,
           let sub_f := simplify (assign_lit l (hd :: f)),
-          let m := num_literals (simplify (assign_lit l (hd :: f))),
+          let m := formula_size (simplify (assign_lit l (hd :: f))),
           have ih := ih m (begin
             rw ←h_eq,
             simp only [m],

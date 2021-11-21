@@ -2,13 +2,13 @@ import types
 
 def assign_lit (l : literal) : formula → formula
 | [] := []
-| (x :: f) := 
+| (x :: f) :=
   (if l ∈ x then [] else [list.remove_all x [l_not l]]) ++ assign_lit f
 
 def assign_all (f : formula) (lits : list literal) :=
 list.foldl (λ f l, assign_lit l f) f lits
 
-lemma assign_removes : ∀ (f : formula) (l : literal), 
+lemma assign_removes : ∀ (f : formula) (l : literal),
   l ∉ (assign_lit l f).join ∧ l_not l ∉ (assign_lit l f).join:=
 begin
   intros f l,
@@ -52,7 +52,7 @@ begin
       simp [h] at right,
       assumption,
     },
-    
+
   },
   {
     have not_in := ih l,
@@ -63,8 +63,8 @@ begin
   },
 end
 
-lemma assign_subset : ∀ (f : formula) (l : literal), 
-  (assign_lit l f).join ⊆ f.join := 
+lemma assign_subset : ∀ (f : formula) (l : literal),
+  (assign_lit l f).join ⊆ f.join :=
 begin
   intros f l_assign l h,
   induction f;
@@ -88,7 +88,7 @@ begin
       },
       {
         rw left at right,
-        have sub : list.remove_all f_hd [l_not l_assign] ⊆ f_hd := 
+        have sub : list.remove_all f_hd [l_not l_assign] ⊆ f_hd :=
           by apply list.filter_subset,
         apply or.intro_left,
         apply sub,
@@ -110,7 +110,7 @@ begin
   apply iff.intro,
   {
     intro h,
-      
+
     induction' a,
     {
       simp at h,
@@ -133,9 +133,9 @@ begin
   },
 end
 
-lemma assign_when_not_in_out : ∀ (f : formula) (l : literal) (c : clause), 
-  c ∈ f → c ∉ assign_lit l f → l_not l ∈ c ∨ l ∈ c := 
-begin 
+lemma assign_when_not_in_out : ∀ (f : formula) (l : literal) (c : clause),
+  c ∈ f → c ∉ assign_lit l f → l_not l ∈ c ∨ l ∈ c :=
+begin
   intros f l c c_f c_n_a_f,
   induction' f,
   {
@@ -178,7 +178,7 @@ begin
       simp [h_left, h_right] at c_n_a_f,
       rw not_or_distrib at c_n_a_f,
       cases c_n_a_f,
-      
+
       have h_eq : list.remove_all hd [l_not l] = hd  := begin
         rw list.remove_all,
         simp,
@@ -195,49 +195,54 @@ begin
   },
 end
 
-lemma assign_with_present_reduces_literals : 
-∀ (f : formula) (l : literal), 
-l ∈ f.join ∨ l_not l ∈ f.join → 
-num_literals (assign_lit l f) < num_literals f :=
-begin 
-  intros f l h,
-  rw num_literals,
-  rw num_literals,
-  apply num_distinct_reduced,
-  apply assign_subset,
-  cases' h;
-  simp at h;
-  simp,
+lemma remove_all_length_impl {α : Type} [decidable_eq α]
+  (l : list α) (r : α) : (l.remove_all [r]).length + (if r ∈ l then 1 else 0) ≤ l.length :=
+begin
+  induction' l,
   {
-    apply exists.intro l,
-    
-    apply and.intro,
-    {
-      assumption,
-    },
-    {
-      have removed := and.elim_left (assign_removes f l),
-      simp at removed,
-      exact removed,
-    },
+    rw list.remove_all,
+    simp,
+
   },
   {
-    apply exists.intro (l_not l),
-    apply and.intro,
-    {
-      assumption,
-    },
-    {
-      have removed := and.elim_right (assign_removes f l),
-      simp at removed,
-      exact removed,
-    },
+    rw list.remove_all,
+    rw list.filter,
+    simp,
+    cases' classical.em (hd = r);
+    have ih := ih r;
+    rw list.remove_all at ih;
+    cases' classical.em (r ∈ l);
+    simp [h, h_1];
+    simp [h_1] at ih,
+    linarith,
+    linarith,
+    linarith,
+    have neq := ne.symm h,
+    simp [neq],
+    apply ih,
   },
 end
 
-lemma assign_without_present_eq  (f : formula) (l : literal) : 
+lemma remove_all_leq_length {α : Type} [decidable_eq α]
+  (l : list α) (r : α) : (l.remove_all [r]).length ≤ l.length :=
+begin
+  have h := remove_all_length_impl l r,
+  cases' classical.em (r ∈ l);
+  simp [h_1] at h;
+  linarith,
+end
+
+lemma remove_all_less_length {α : Type} [decidable_eq α]
+  (l : list α) (r : α) (h : r ∈ l) : (l.remove_all [r]).length < l.length :=
+begin
+  have h_impl := remove_all_length_impl l r,
+  simp [h] at h_impl,
+  linarith,
+end
+
+lemma assign_without_present_eq  (f : formula) (l : literal) :
 l ∉ f.join ∧ l_not l ∉ f.join → assign_lit l f = f :=
-begin 
+begin
   intro h,
   induction' f;
   rw assign_lit,
@@ -264,9 +269,64 @@ begin
   },
 end
 
-lemma assign_leq_literals (f : formula) (l : literal) : 
-num_literals (assign_lit l f) ≤ num_literals f :=
-begin 
+lemma assign_with_present_reduces_size :
+∀ (f : formula) (l : literal),
+l ∈ f.join ∨ l_not l ∈ f.join →
+formula_size (assign_lit l f) < formula_size f :=
+begin
+  intros f l h,
+  rw formula_size,
+  rw formula_size,
+  induction' f,
+  {
+    simp at h,
+    contradiction,
+  },
+  {
+    cases' classical.em (l ∈ f.join ∨ l_not l ∈ f.join),
+    {
+      rw assign_lit,
+      simp,
+      have leq : (list.map list.length (ite (l ∈ hd) list.nil
+                  [list.remove_all hd [l_not l]])).sum ≤ hd.length :=
+      begin
+        cases' classical.em (l ∈ hd);
+        simp [h_2],
+        apply remove_all_leq_length,
+      end,
+      have ih := ih l h_1,
+      simp at ih,
+      linarith,
+    },
+    {
+      rw not_or_distrib at h_1,
+      have h_in : l ∈ hd ∨ l_not l ∈ hd := begin
+        simp [h_1] at h,
+        apply h,
+      end,
+
+      rw assign_lit,
+      have h_eq := assign_without_present_eq _ _ h_1,
+      rw h_eq,
+      simp,
+
+      cases classical.em (l ∈ hd);
+      simp [h_2],
+      {
+        exact list.length_pos_of_mem h_2,
+      },
+      {
+        simp [h_2] at h_in,
+        exact remove_all_less_length _ _ h_in,
+      },
+    },
+  },
+end
+
+
+lemma assign_leq_size (f : formula) (l : literal) :
+formula_size (assign_lit l f) ≤ formula_size f :=
+begin
   cases' classical.em (l ∉ f.join ∧ l_not l ∉ f.join),
   {
     have h := assign_without_present_eq _ _ h,
@@ -280,12 +340,12 @@ begin
       apply h,
     end,
 
-    have less := assign_with_present_reduces_literals _ _ h,
+    have less := assign_with_present_reduces_size _ _ h,
     linarith,
   },
 end
 
-lemma list_containment_l {α : Type} : ∀ (a b : list α) (c : α), 
+lemma list_containment_l {α : Type} : ∀ (a b : list α) (c : α),
   c ∉ b → c ∈ a ++ b → c ∈ a :=
 begin
   intros a b c h_1 h_2,
@@ -293,10 +353,10 @@ begin
   finish,
 end
 
-lemma removed_literal_must_be_contained 
+lemma removed_literal_must_be_contained
   (f : formula) (l : literal) (c : clause):
-  c ∈ f → c ∉ assign_lit l f → l ∉ c → l_not l ∈ c → 
-  c.remove_all [l_not l] ∈ assign_lit l f := 
+  c ∈ f → c ∉ assign_lit l f → l ∉ c → l_not l ∈ c →
+  c.remove_all [l_not l] ∈ assign_lit l f :=
 begin
   intros h_in_f h_n_in_a_f l_n_in_c n_l_in_c,
   induction' f,
@@ -329,7 +389,7 @@ begin
   },
 end
 
-def add_l_to_assign (a : assignment) (l : literal) : assignment := 
+def add_l_to_assign (a : assignment) (l : literal) : assignment :=
 subtype.mk (a.val.remove_all [l_not l] ++ [l]) begin
   intros l_other h_l_in,
   simp,
@@ -447,7 +507,7 @@ lemma assign_sat_implies_sat :
       simp [h_2] at either,
 
       let removed := c.remove_all [l_not l],
-      have removed_in : removed ∈ a_f := 
+      have removed_in : removed ∈ a_f :=
         removed_literal_must_be_contained _ _ _ h_in_f h_1 h_2 either,
       rw formula_sat at h,
       have h := h removed removed_in,
@@ -486,8 +546,8 @@ lemma assign_sat_implies_sat :
 end
 
 lemma must_exist_filtered_clause (f : formula) (l : literal) (c : clause):
-c ∉ f → c ∈ assign_lit l f → 
-(∃ (c' : clause), c'.remove_all [l_not l] = c ∧ c' ∈ f) := 
+c ∉ f → c ∈ assign_lit l f →
+(∃ (c' : clause), c'.remove_all [l_not l] = c ∧ c' ∈ f) :=
 begin
   intros h_n_in_f h_in_a_f,
   induction' f,
@@ -534,8 +594,8 @@ begin
 end
 
 lemma sat_implies_assign_sat_or_cant_exist (f : formula) (l : literal) :
-(∃ (a : assignment), formula_sat a f ∧ l ∈ a) → 
-sat (assign_lit l f) := 
+(∃ (a : assignment), formula_sat a f ∧ l ∈ a) →
+sat (assign_lit l f) :=
 begin
   intros assign_exists,
   cases' assign_exists,
@@ -572,14 +632,14 @@ begin
   },
 end
 
-lemma assign_all_leq_num_literals (f : formula) (lits : list literal)
-: num_literals (assign_all f lits) ≤ num_literals f := 
+lemma assign_all_leq_size (f : formula) (lits : list literal)
+: formula_size (assign_all f lits) ≤ formula_size f :=
 begin
   rw assign_all,
   induction' lits;
   simp,
   have ih := ih (assign_lit hd f),
-  have less : num_literals (assign_lit hd f) ≤ num_literals f := 
-    by apply assign_leq_literals,
+  have less : formula_size (assign_lit hd f) ≤ formula_size f :=
+    by apply assign_leq_size,
   linarith,
 end

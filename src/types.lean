@@ -1,4 +1,7 @@
-import num_distinct
+import data.set.finite
+import tactic.induction
+import tactic.linarith
+import tactic.rcases
 
 abbreviation atom := ℕ
 
@@ -109,7 +112,7 @@ def formula_sat (a : assignment) (f : formula) :=
   ∀ c, c ∈ f → clause_sat a c 
 def sat (f : formula) := ∃ a, formula_sat a f
 
-def num_literals (f : formula) : ℕ := num_distinct f.join
+def formula_size (f : formula) : ℕ := f.join.length
 
 def non_empty_formula := {f : formula // f.join ≠ []}
 

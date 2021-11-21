@@ -95,8 +95,8 @@ def sat_formula_0 : formula := [
   [{atom := 13, negated := tt},{atom := 7, negated := tt},{atom := 10, negated := ff}]
 ]
 
-#eval num_literals sat_formula_0
-#eval num_literals (simplify sat_formula_0)
+#eval sat_formula_0.join.erase_dup.length
+#eval (simplify sat_formula_0).join.erase_dup.length
 #eval compute_sat naive_choice_func sat_formula_0
 
 -- problems/uf20-0302.cnf (modified to be unsat)
@@ -199,6 +199,6 @@ def sat_formula_1 : formula := [
   [{atom := 11, negated := ff},{atom := 15, negated := tt},{atom := 9, negated := tt}]
 ]
 
-#eval num_literals sat_formula_1
-#eval num_literals (simplify sat_formula_1)
+#eval sat_formula_1.join.erase_dup.length
+#eval (simplify sat_formula_1).join.erase_dup.length
 #eval compute_sat naive_choice_func sat_formula_1
