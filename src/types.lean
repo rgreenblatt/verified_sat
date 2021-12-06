@@ -164,5 +164,12 @@ def example_complex_formula : formula := [
   [{atom := 1, negated := tt}, {atom := 3, negated := ff}]
 ]
 
-def is_pure_literal (l : literal) (f: formula) : bool := 
+def is_pure_literal (l : literal) (f: formula) : bool :=
+  ∀ c ∈ f, l_not l ∉ c
+
+def is_pure_literal' (l : literal) (f: formula) : bool :=
   (l_not l) ∉ list.join f
+
+@[simp]
+lemma is_pure_literal_iff (l f) : is_pure_literal l f ↔ is_pure_literal' l f :=
+by simp [is_pure_literal, is_pure_literal']
