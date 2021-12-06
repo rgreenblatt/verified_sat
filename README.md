@@ -6,4 +6,4 @@ The proofs are parametric over a function for picking the next variable to branc
 
 The bulk of the work is in proving various lemmas about assignment in `src/assign.lean`.
 
-Some trivial sat problems are solved in `src/problems.lean`
+Some trivial sat problems are solved in `src/problems.lean`.
